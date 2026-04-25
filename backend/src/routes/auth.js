@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const pool = require('../db');
+const { run, get } = require('../db');
 const { generateTokens, schemas, validate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -10,18 +10,26 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
     const { email, password, name } = req.body;
     const hashedPassword = await bcrypt.hash(password, 12);
     
-    const { rows } = await pool.query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, plan',
+    const result = await run(
+      'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
       [email, hashedPassword, name || null]
     );
     
-    const tokens = generateTokens(rows[0]);
+    const user = await get(
+      'SELECT id, email, name, plan FROM users WHERE id = ?',
+      [result.id]
+    );
+    
+    const tokens = generateTokens(user);
     
     res.status(201).json({
-      user: rows[0],
+      user,
       ...tokens
     });
   } catch (err) {
+    if (err.message?.includes('UNIQUE constraint failed')) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
     next(err);
   }
 });
@@ -30,16 +38,15 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
   try {
     const { email, password } = req.body;
     
-    const { rows } = await pool.query(
-      'SELECT id, email, name, password_hash, plan FROM users WHERE email = $1',
+    const user = await get(
+      'SELECT id, email, name, password_hash, plan FROM users WHERE email = ?',
       [email]
     );
     
-    if (rows.length === 0) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     
     if (!valid) {

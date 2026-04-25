@@ -1,7 +1,7 @@
 const crawlerService = require('./crawler.service');
 const aiService = require('./ai.service');
 const analysisModel = require('../models/analysis.model');
-const pool = require('../db');
+const { run } = require('../db');
 
 class AnalysisService {
   async runAnalysis(analysisId) {
@@ -41,12 +41,12 @@ class AnalysisService {
 
       // Step 5: Save suggestions
       for (const s of suggestions) {
-        await pool.query(
+        await run(
           `INSERT INTO page_suggestions 
            (analysis_id, suggested_url_path, title, description, primary_keyword, 
             secondary_keywords, search_volume, difficulty, traffic_potential, 
             effort_score, priority_score) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             analysisId,
             s.suggested_url_path,

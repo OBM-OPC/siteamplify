@@ -1,11 +1,25 @@
 const { OpenAI } = require('openai');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai = null;
+try {
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+} catch (e) {
+  console.warn('⚠️ OpenAI not initialized:', e.message);
+}
 
 class AIService {
+  isAvailable() {
+    return !!openai;
+  }
+
   async generateBrief(crawlData, competitorData, suggestion) {
-    const prompt = `
-Du bist ein SEO-Experte. Erstelle einen Content-Brief für eine Unterseite.
+    if (!this.isAvailable()) {
+      return this._dummyBrief(suggestion);
+    }
+
+    const prompt = `Du bist ein SEO-Experte. Erstelle einen Content-Brief für eine Unterseite.
 
 Website: ${crawlData.url}
 Hauptthema: ${suggestion.primary_keyword}
@@ -49,8 +63,11 @@ Erstelle einen Content-Brief als JSON:
   }
 
   async generateContent(brief) {
-    const prompt = `
-Schreibe einen vollständigen SEO-optimierten Artikel basierend auf diesem Content-Brief:
+    if (!this.isAvailable()) {
+      return this._dummyContent(brief);
+    }
+
+    const prompt = `Schreibe einen vollständigen SEO-optimierten Artikel basierend auf diesem Content-Brief:
 
 Zielgruppe: ${brief.target_audience}
 Tonality: ${brief.tone_of_voice}
@@ -76,8 +93,11 @@ Schreibe den Artikel in Markdown. Nutze Überschriften (H2, H3), Absätze, Aufz�
   }
 
   async generateSuggestions(crawlData, competitorData) {
-    const prompt = `
-Basierend auf dieser Website-Analyse, schlage 5-10 fehlende Unterseiten vor, die Traffic bringen könnten.
+    if (!this.isAvailable()) {
+      return this._dummySuggestions(crawlData);
+    }
+
+    const prompt = `Basierend auf dieser Website-Analyse, schlage 5-10 fehlende Unterseiten vor, die Traffic bringen könnten.
 
 Aktuelle Website: ${crawlData.url}
 Seitentitel: ${crawlData.pageTitle || 'Nicht gesetzt'}
@@ -122,6 +142,77 @@ Antworte als JSON-Array:
     if (domain.includes('arzt') || domain.includes('praxis')) return 'Patienten';
     if (domain.includes('bau') || domain.includes('handwerk')) return 'Bauherren & Hausbesitzer';
     return 'Allgemeine Zielgruppe';
+  }
+
+  // Dummy data generators for when OpenAI is not available
+  _dummyBrief(suggestion) {
+    return {
+      target_audience: this.inferAudience(suggestion.primary_keyword),
+      tone_of_voice: 'professionell',
+      word_count_target: 1200,
+      outline: [
+        { h2: 'Einleitung', h3s: ['Problemstellung', 'Lösungsansatz'] },
+        { h2: 'Hauptteil', h3s: ['Schritt 1', 'Schritt 2', 'Schritt 3'] },
+        { h2: 'Fazit', h3s: ['Zusammenfassung', 'Call-to-Action'] }
+      ],
+      key_points: [
+        'Erkläre die Kernproblematik',
+        'Biete konkrete Lösungsansätze',
+        'Nutze Beispiele aus der Praxis'
+      ],
+      internal_link_suggestions: [
+        { anchor: 'Mehr erfahren', target: '/' }
+      ],
+      title_suggestion: `${suggestion.title} | Expert Guide 2025`,
+      meta_description_suggestion: `Erfahren Sie alles über ${suggestion.primary_keyword}. Praktische Tipps und Expertenwissen in unserem umfassenden Guide.`
+    };
+  }
+
+  _dummyContent(brief) {
+    return `# ${brief.title_suggestion || 'Artikel'}
+
+## Einleitung
+
+Dies ist ein automatisch generierter Platzhalter-Artikel. Sobald ein OpenAI API Key konfiguriert ist, werden hier hochwertige, SEO-optimierte Inhalte generiert.
+
+## Hauptteil
+
+### Schritt 1
+Beschreibung des ersten Schritts...
+
+### Schritt 2
+Beschreibung des zweiten Schritts...
+
+### Schritt 3
+Beschreibung des dritten Schritts...
+
+## Fazit
+
+Zusammenfassung der wichtigsten Punkte und Call-to-Action.
+`;
+  }
+
+  _dummySuggestions(crawlData) {
+    const domain = crawlData.domain || 'example.com';
+    const topics = [
+      { keyword: 'SEO Grundlagen', path: '/seo-grundlagen' },
+      { keyword: 'Content Marketing', path: '/content-marketing' },
+      { keyword: 'Local SEO', path: '/local-seo' },
+      { keyword: 'KI Tools', path: '/ki-tools' },
+      { keyword: 'Website Optimierung', path: '/website-optimierung' }
+    ];
+
+    return topics.map((t, i) => ({
+      suggested_url_path: t.path,
+      title: `${t.keyword}: Der ultimative Guide für ${domain}`,
+      description: `Umfassender Guide zu ${t.keyword} mit praktischen Tipps und Strategien.`,
+      primary_keyword: t.keyword,
+      secondary_keywords: ['SEO', 'Marketing', 'Guide'],
+      search_volume: 1000 + (i * 200),
+      difficulty: 30 + (i * 5),
+      traffic_potential: 500 + (i * 100),
+      effort_score: 2
+    }));
   }
 }
 

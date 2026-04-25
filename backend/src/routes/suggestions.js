@@ -1,17 +1,24 @@
 const express = require('express');
 const { authenticate } = require('../middleware/auth');
-const pool = require('../db');
+const { all, get } = require('../db');
 
 const router = express.Router({ mergeParams: true });
 
 router.get('/:id/suggestions', authenticate, async (req, res, next) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT * FROM page_suggestions WHERE analysis_id = $1 ORDER BY priority_score DESC',
+    const rows = await all(
+      'SELECT * FROM page_suggestions WHERE analysis_id = ? ORDER BY priority_score DESC',
       [req.params.id]
     );
     
-    res.json(rows);
+    // Parse JSON fields
+    const suggestions = rows.map(row => ({
+      ...row,
+      secondary_keywords: JSON.parse(row.secondary_keywords || '[]'),
+      status: row.status
+    }));
+    
+    res.json(suggestions);
   } catch (err) {
     next(err);
   }
@@ -19,16 +26,17 @@ router.get('/:id/suggestions', authenticate, async (req, res, next) => {
 
 router.get('/:id/suggestions/:suggestionId', authenticate, async (req, res, next) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT * FROM page_suggestions WHERE id = $1 AND analysis_id = $2',
+    const row = await get(
+      'SELECT * FROM page_suggestions WHERE id = ? AND analysis_id = ?',
       [req.params.suggestionId, req.params.id]
     );
     
-    if (rows.length === 0) {
+    if (!row) {
       return res.status(404).json({ error: 'Not found' });
     }
     
-    res.json(rows[0]);
+    row.secondary_keywords = JSON.parse(row.secondary_keywords || '[]');
+    res.json(row);
   } catch (err) {
     next(err);
   }

@@ -4,6 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
+const { initDB } = require('./db/init');
+
 const authRoutes = require('./routes/auth');
 const analysisRoutes = require('./routes/analyses');
 const suggestionRoutes = require('./routes/suggestions');
@@ -16,6 +18,14 @@ const { errorHandler } = require('./middleware/error');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Initialize DB
+initDB().then(() => {
+  console.log('📦 Database ready');
+}).catch(err => {
+  console.error('❌ Database init failed:', err);
+  process.exit(1);
+});
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
@@ -25,8 +35,8 @@ app.use(cors({
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -62,6 +72,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 API server running on port ${PORT}`);
+  console.log(`📍 API URL: http://localhost:${PORT}`);
 });
 
 module.exports = app;
