@@ -1,0 +1,36 @@
+{
+  "name": "siteamplify-backend",
+  "version": "0.1.0",
+  "description": "SiteAmplify API — SEO + KI Visibility Booster",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "zod": "^3.22.4",
+    "puppeteer": "^22.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "openai": "^4.28.0",
+    "stripe": "^14.19.0",
+    "bullmq": "^5.1.0",
+    "ioredis": "^5.3.2",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
