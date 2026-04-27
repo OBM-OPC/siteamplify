@@ -1,25 +1,65 @@
-# siteamplify
+# SiteAmplify
 
-## SEO KI Booster
+SEO + KI Visibility Booster für Oberbeck Marketing.
 
-Automatisierungstool für massenhafte SEO-Content-Generierung mit KI. 
+## Aktueller Stack
 
-### Projektstruktur
+- **Frontend:** Next.js 14 + Tailwind CSS
+- **Backend:** Express + SQLite
+- **Crawler:** Puppeteer + Cheerio
+- **AI:** OpenAI API mit Fallback-Modus ohne Key
+- **Deployment:** Netlify (Frontend) + Railway (Backend empfohlen)
 
-- `CONCEPT.md` – Konzept & Marktanalyse
-- `TECH-SPEC.md` – Technische Spezifikation
+## Status
 
-### Tech Stack
+- Frontend ist gebaut und kann auf Netlify laufen
+- Backend ist für Railway vorbereitet
+- SQLite wird lokal oder über ein gemountetes Railway-Volume genutzt
 
-- Frontend: Next.js 14 + Tailwind CSS + shadcn/ui
-- Backend: Python FastAPI + PostgreSQL
-- KI-Integration: Google Gemini API
-- Hosting: Vercel (Frontend) + Railway (Backend)
+## Struktur
 
-### Setup
+- `frontend/` – Next.js App
+- `backend/` – Express API
+- `CONCEPT.md` – Produktidee
+- `TECH-SPEC.md` – technische Spezifikation
+- `railway.json` – Railway Deploy-Konfiguration
 
-Siehe `TECH-SPEC.md` für detaillierte Setup-Anleitungen.
+## Backend lokal starten
 
----
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm run dev
+```
 
-**Kontakt:** Philipp @ Oberbeck Marketing
+Healthcheck:
+
+```bash
+http://localhost:3001/health
+```
+
+## Railway Deployment
+
+Benötigte Env Vars im Backend-Service:
+
+- `NODE_ENV=production`
+- `PORT=3001` (Railway überschreibt oft selbst)
+- `FRONTEND_URL=https://siteamplify.netlify.app`
+- `DATABASE_URL=/data/siteamplify.db`
+- `JWT_SECRET=...`
+- `JWT_REFRESH_SECRET=...`
+- optional `OPENAI_API_KEY=...`
+- optional Stripe-Variablen
+
+Empfehlung:
+- Railway Volume mounten und auf `/data` legen
+- Repo-Root deployen, `railway.json` nutzt `backend/Dockerfile`
+
+## Frontend
+
+`frontend/.env.production`
+
+```bash
+NEXT_PUBLIC_API_URL=https://<deine-railway-domain>
+```

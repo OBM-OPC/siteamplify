@@ -1,10 +1,23 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = process.env.DATABASE_URL || path.join(__dirname, '../../data/siteamplify.db');
+function resolveDbPath() {
+  const configured = process.env.DATABASE_URL || process.env.SQLITE_PATH;
+
+  if (configured && !configured.startsWith('postgres://') && !configured.startsWith('postgresql://')) {
+    return path.isAbsolute(configured)
+      ? configured
+      : path.resolve(__dirname, '../../', configured);
+  }
+
+  const volumeRoot = process.env.RAILWAY_VOLUME_MOUNT_PATH || '/data';
+  return path.join(volumeRoot, 'siteamplify.db');
+}
+
+const dbPath = resolveDbPath();
 
 // Ensure data directory exists
-const fs = require('fs');
 const dir = path.dirname(dbPath);
 if (!fs.existsSync(dir)) {
   fs.mkdirSync(dir, { recursive: true });
